@@ -165,6 +165,16 @@ def _select_custom_extensions(
     return filtered
 
 
+def _resolve_gpu(default_gpu: Any, test_config: Dict[str, Any]) -> Any:
+    if not isinstance(test_config, dict):
+        return default_gpu
+    override_gpu = test_config.get("gpu")
+    if override_gpu is None:
+        return default_gpu
+    override_gpu_str = str(override_gpu).strip()
+    return override_gpu_str if override_gpu_str else default_gpu
+
+
 def build_image(base_image: str, image_cfg: Dict[str, Any] | None = None):
     import modal
 
@@ -266,9 +276,11 @@ def _print_result(result: Dict[str, Any]) -> None:
             if show_benchmark:
                 custom_ms = _fmt_float(item.get("custom_ms"), 6)
                 parts.append(f"custom_ms={custom_ms} ms")
+            if item.get("message"):
+                parts.append(str(item.get("message")))
             print(" ".join(parts))
         if isinstance(data, dict) and data:
-            print("--- Data ---")
+            print("--- Settings ---")
             for key, value in data.items():
                 print(f"{key:<12}: {value}")
         return
@@ -303,7 +315,7 @@ def _print_result(result: Dict[str, Any]) -> None:
                 print(f"{key:<12}: {custom_meta[key]}")
 
     if isinstance(data, dict) and data:
-        print("--- Data ---")
+        print("--- Settings ---")
         for key, value in data.items():
             print(f"{key:<12}: {value}")
 
@@ -358,7 +370,7 @@ def main() -> int:
     image_cfg = config["image"]
     base_image = image_cfg["base"]
     image = build_image(base_image, image_cfg)
-    gpu = config["gpu"]
+    gpu = _resolve_gpu(config["gpu"], test_config)
     cpu = config.get("cpu", 2)
     timeout = int(config["timeout"])
     _log(verbose, f"App name: {app_name}")

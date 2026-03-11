@@ -8,13 +8,15 @@
   - 测试代码（统一入口为 `scripts/run.py:run`）
   - `data.py`（提供 `data(ctx)`）
   - `ref.py`（提供 `run(ctx, data)`，`mode=accuracy/all` 时需要）
+  - 可选 `message.py`（提供 `variant_message(ctx, variant, settings)`，用于每个 variant 的额外输出）
   - 自动推导命名的 CUDA 源码文件：
     - `<workload>.cpp`
     - `<workload>_*.cu`（同一 workload 可有多个变体，全部会被测试）
 
 ## 配置行为
 - 仓库使用 `scripts/settings.json` 作为默认配置来源。
-- 测试目录下 `config.json` 仅用于测试参数（如 `n`、`warmup`、`iters`、`dtype`），不覆盖运行配置。
+- 测试目录下 `config.json` 主要用于测试参数（如 `n`、`warmup`、`iters`、`dtype`）。
+- `config.json` 可选字段 `gpu` 可覆盖 `scripts/settings.json` 里的默认 GPU，其它运行配置不覆盖。
 - 配置项至少包含：
   - `name`
   - `entry`
@@ -31,6 +33,7 @@
   - `accuracy`：只检查正确性（需要 `ref.py`）
   - `benchmark`：只测性能（不需要 `ref.py`）
   - 不写或 `all`：正确性和性能都测试
+- 若不存在 `message.py`，`Variants` 中不打印额外信息。
 
 ## 提交规范
 - Git commit message 采用：`[TYPE] <简要描述>`

@@ -75,7 +75,7 @@ def _capture_ninja_output(module_name: str) -> dict:
     return {"build_dir": build_dir, "ninja_exit_code": code, "ninja_output": output}
 
 
-def _time_kernel(fn, warmup: int, iters: int) -> float:
+def _time_kernel(fn, warmup: int, iters: int, flush_l2: bool = True) -> float:
     for _ in range(max(0, warmup)):
         fn()
     torch.cuda.synchronize()
@@ -84,12 +84,13 @@ def _time_kernel(fn, warmup: int, iters: int) -> float:
         return 0.0
 
     total_ms = 0.0
-    l2_flush_bytes = 128 * 1024 * 1024
-    l2_flush_buf = torch.empty(l2_flush_bytes, dtype=torch.uint8, device="cuda")
-
-    # Flush once before measured iters to reduce warmup cache carry-over.
-    l2_flush_buf.add_(1)
-    torch.cuda.synchronize()
+    l2_flush_buf = None
+    if flush_l2:
+        l2_flush_bytes = 128 * 1024 * 1024
+        l2_flush_buf = torch.empty(l2_flush_bytes, dtype=torch.uint8, device="cuda")
+        # Flush once before measured iters to reduce warmup cache carry-over.
+        l2_flush_buf.add_(1)
+        torch.cuda.synchronize()
 
     for _ in range(iters):
         start = torch.cuda.Event(enable_timing=True)
@@ -100,9 +101,10 @@ def _time_kernel(fn, warmup: int, iters: int) -> float:
         end.synchronize()
         total_ms += float(start.elapsed_time(end))
 
-        # Clear L2 cache between measured iterations.
-        l2_flush_buf.add_(1)
-        torch.cuda.synchronize()
+        if flush_l2:
+            # Clear L2 cache between measured iterations.
+            l2_flush_buf.add_(1)
+            torch.cuda.synchronize()
 
     return total_ms / iters
 
@@ -195,6 +197,7 @@ def run(ctx: Dict[str, Any]) -> Dict[str, Any]:
 
     data_path = os.path.join(test_dir, "data.py")
     ref_path = os.path.join(test_dir, "ref.py")
+    message_path = os.path.join(test_dir, "message.py")
     required_paths = [data_path]
     if need_accuracy:
         required_paths.append(ref_path)
@@ -204,10 +207,13 @@ def run(ctx: Dict[str, Any]) -> Dict[str, Any]:
 
     data_mod = _load_module(data_path, "modalcli_data")
     ref_mod = _load_module(ref_path, "modalcli_ref") if need_accuracy else None
+    message_mod = _load_module(message_path, "modalcli_message") if os.path.exists(message_path) else None
     if not hasattr(data_mod, "data"):
         raise AttributeError("data.py must define data(ctx)")
     if need_accuracy and not hasattr(ref_mod, "run"):
         raise AttributeError("ref.py must define run(ctx, data)")
+    if message_mod is not None and not hasattr(message_mod, "variant_message"):
+        raise AttributeError("message.py must define variant_message(ctx, variant, settings)")
 
     cfg = ctx.get("config", {})
     ext_cfgs = cfg.get("custom_extensions")
@@ -222,6 +228,7 @@ def run(ctx: Dict[str, Any]) -> Dict[str, Any]:
         raise ValueError("data(ctx) must provide 'inputs' as list/tuple")
     warmup = int(data_payload.get("warmup", 20))
     iters = int(data_payload.get("iters", 100))
+    flush_l2 = bool(data_payload.get("flush_l2", True))
 
     ref_out = None
     ref_metrics: Dict[str, Any] = {}
@@ -258,8 +265,18 @@ def run(ctx: Dict[str, Any]) -> Dict[str, Any]:
             row["max_abs_err"] = accuracy.get("max_abs_err")
 
         if need_benchmark:
-            custom_ms = _time_kernel(lambda: custom_fn(*inputs), warmup=warmup, iters=iters)
+            custom_ms = _time_kernel(
+                lambda: custom_fn(*inputs),
+                warmup=warmup,
+                iters=iters,
+                flush_l2=flush_l2,
+            )
             row["custom_ms"] = custom_ms
+
+        if message_mod is not None:
+            extra = message_mod.variant_message(ctx, row, data_payload)
+            if extra is not None:
+                row["message"] = str(extra)
 
         variants.append(row)
 
