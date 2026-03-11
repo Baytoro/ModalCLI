@@ -1,0 +1,13 @@
+{
+  "name": "modalcli-app",
+  "entry": "run.py:run",
+  "gpu": "B200",
+  "timeout": 600,
+  "image": {
+    "base": "pytorch/pytorch:2.9.1-cuda13.0-cudnn9-devel",
+    "env": {},
+    "run_commands": [],
+    "apt": [],
+    "pip": []
+  }
+}
