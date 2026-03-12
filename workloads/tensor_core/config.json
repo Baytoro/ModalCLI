@@ -1,0 +1,11 @@
+{
+  "mode": "benchmark",
+  "variants": [],
+  "warps_per_block": 8,
+  "num_blocks": 0,
+  "kernel_iters": 2000,
+  "repeat": 16,
+  "accumulators": 4,
+  "warmup": 3,
+  "iters": 8
+}

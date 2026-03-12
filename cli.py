@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+import re
 import sys
 from glob import glob
 from importlib.machinery import SourceFileLoader
@@ -175,6 +176,37 @@ def _resolve_gpu(default_gpu: Any, test_config: Dict[str, Any]) -> Any:
     return override_gpu_str if override_gpu_str else default_gpu
 
 
+def _resolve_test_dir(path_arg: str | None, target_arg: str | None) -> str:
+    if path_arg and target_arg:
+        raise ValueError("Use either positional workload or -p/--path, not both")
+    raw = path_arg or target_arg
+    if not raw:
+        raise ValueError("missing test target; use e.g. `python cli.py vector_add`")
+
+    raw = str(raw).strip()
+    if not raw:
+        raise ValueError("test target is empty")
+
+    is_simple_name = (
+        not os.path.isabs(raw)
+        and "/" not in raw
+        and "\\" not in raw
+    )
+
+    candidates = []
+    if is_simple_name:
+        candidates.append(os.path.join(REPO_ROOT, "workloads", raw))
+        candidates.append(os.path.join(REPO_ROOT, "worloads", raw))  # backward compatibility
+    candidates.append(raw)
+
+    for candidate in candidates:
+        if os.path.isdir(candidate):
+            return os.path.abspath(candidate)
+
+    preferred = candidates[0] if candidates else raw
+    return os.path.abspath(preferred)
+
+
 def build_image(base_image: str, image_cfg: Dict[str, Any] | None = None):
     import modal
 
@@ -244,6 +276,17 @@ def _fmt_float(value: Any, digits: int = 4) -> str:
     return str(value)
 
 
+def _format_variant_message(raw: Any) -> str:
+    text = str(raw).strip()
+    match = re.match(r"^([A-Za-z_][A-Za-z0-9_]*)=(.+)$", text)
+    if match:
+        key = match.group(1).strip()
+        value = match.group(2).strip()
+        if value:
+            return f"{value} {key}"
+    return text
+
+
 def _print_result(result: Dict[str, Any]) -> None:
     if isinstance(result.get("variants"), list):
         variants = result["variants"]
@@ -275,9 +318,9 @@ def _print_result(result: Dict[str, Any]) -> None:
                 parts.append(f"allclose={ok:<5}")
             if show_benchmark:
                 custom_ms = _fmt_float(item.get("custom_ms"), 6)
-                parts.append(f"custom_ms={custom_ms} ms")
+                parts.append(f"{custom_ms} ms")
             if item.get("message"):
-                parts.append(str(item.get("message")))
+                parts.append(_format_variant_message(item.get("message")))
             print(" ".join(parts))
         if isinstance(data, dict) and data:
             print("--- Settings ---")
@@ -322,7 +365,8 @@ def _print_result(result: Dict[str, Any]) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Modal CUDA test runner")
-    parser.add_argument("-p", "--path", required=True, help="Path to test folder")
+    parser.add_argument("target", nargs="?", help="Workload name (e.g. vector_add) or test folder path")
+    parser.add_argument("-p", "--path", help="Path to test folder (legacy option)")
     parser.add_argument(
         "--verbose",
         action="store_true",
@@ -331,7 +375,11 @@ def main() -> int:
     args = parser.parse_args()
     verbose = args.verbose
 
-    test_dir = os.path.abspath(args.path)
+    try:
+        test_dir = _resolve_test_dir(args.path, args.target)
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
     test_config_path = os.path.join(test_dir, "config.json")
     _log(verbose, f"Test directory: {test_dir}")
 

@@ -25,7 +25,7 @@
   - `image`（如 `base`、`env`、`run_commands`、`apt`、`pip`）
 
 ## 示例约束
-- 仓库内的 `worloads/*` 可以有可选 `config.json`，用于测试参数输入。
+- 仓库内的 `workloads/*` 可以有可选 `config.json`，用于测试参数输入。
 - `config.json` 可选字段 `variants`：
   - 不写或 `[]`：测试全部 `<workload>_*.cu`
   - 写具体列表：仅测试指定变体（可写 `variant` 名或 `.cu` 文件名）
