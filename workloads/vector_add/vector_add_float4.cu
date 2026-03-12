@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <torch/extension.h>
 
-__global__ void vector_add_fp4_kernel(
+__global__ void vector_add_float4_kernel(
     const float* a,
     const float* b,
     float* out,
@@ -47,7 +47,7 @@ torch::Tensor vector_add_cuda(torch::Tensor a, torch::Tensor b) {
   const int64_t vec_n = (n + 3) / 4;
   const int blocks = (static_cast<int>(vec_n) + threads - 1) / threads;
 
-  vector_add_fp4_kernel<<<blocks, threads>>>(
+  vector_add_float4_kernel<<<blocks, threads>>>(
       a.data_ptr<float>(),
       b.data_ptr<float>(),
       out.data_ptr<float>(),
