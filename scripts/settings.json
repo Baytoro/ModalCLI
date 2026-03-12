@@ -1,7 +1,7 @@
 {
   "name": "modalcli-app",
   "entry": "scripts/run.py:run",
-  "gpu": "B200",
+  "gpu": "H100",
   "cpu": 8,
   "timeout": 600,
   "image": {
