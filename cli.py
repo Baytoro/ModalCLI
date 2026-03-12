@@ -237,16 +237,34 @@ def remote_runner(
     entry_file_path: str,
     func_name: str,
 ):
-    test_root = "/root/test"
-    shared_scripts_root = "/root/project/scripts"
+    return _invoke_entry(
+        config_payload=config_payload,
+        test_config_payload=test_config_payload,
+        entry_file_path=entry_file_path,
+        func_name=func_name,
+        test_root="/root/test",
+        shared_scripts_root="/root/project/scripts",
+        tag="remote",
+    )
+
+
+def _invoke_entry(
+    config_payload: Dict[str, Any],
+    test_config_payload: Dict[str, Any],
+    entry_file_path: str,
+    func_name: str,
+    test_root: str,
+    shared_scripts_root: str,
+    tag: str,
+):
     sys.path.insert(0, test_root)
     if os.path.isdir(shared_scripts_root):
         sys.path.insert(0, shared_scripts_root)
-    print(f"[remote] cwd={os.getcwd()}")
-    print(f"[remote] test_root={test_root}")
-    print(f"[remote] shared_scripts_root={shared_scripts_root}")
-    print(f"[remote] entry={entry_file_path}:{func_name}")
-    print(f"[remote] python={sys.version.split()[0]}")
+    print(f"[{tag}] cwd={os.getcwd()}")
+    print(f"[{tag}] test_root={test_root}")
+    print(f"[{tag}] shared_scripts_root={shared_scripts_root}")
+    print(f"[{tag}] entry={entry_file_path}:{func_name}")
+    print(f"[{tag}] python={sys.version.split()[0]}")
 
     loader = SourceFileLoader("modalcli_user_module", entry_file_path)
     module = loader.load_module()
@@ -260,8 +278,9 @@ def remote_runner(
         "test_dir": test_root,
         "shared_scripts_dir": shared_scripts_root,
         "cwd": os.getcwd(),
+        "run_mode": tag,
     }
-    print("[remote] running user function...")
+    print(f"[{tag}] running user function...")
     return func(ctx)
 
 
@@ -368,6 +387,11 @@ def main() -> int:
     parser.add_argument("target", nargs="?", help="Workload name (e.g. vector_add) or test folder path")
     parser.add_argument("-p", "--path", help="Path to test folder (legacy option)")
     parser.add_argument(
+        "--local",
+        action="store_true",
+        help="Run locally instead of on Modal cloud",
+    )
+    parser.add_argument(
         "--verbose",
         action="store_true",
         help="Print detailed runner logs",
@@ -404,6 +428,43 @@ def main() -> int:
     entry_spec = config.get("entry")
     entry_file, entry_func = _resolve_entry(test_dir, REPO_ROOT, entry_spec)
     _log(verbose, f"Entry: {entry_file}:{entry_func}")
+    shared_scripts_local = os.path.join(REPO_ROOT, "scripts")
+
+    if args.local:
+        _log(verbose, "Run mode: local")
+        _log(verbose, "Executing entry on local machine")
+        try:
+            result = _invoke_entry(
+                config_payload=config,
+                test_config_payload=test_config,
+                entry_file_path=entry_file,
+                func_name=entry_func,
+                test_root=test_dir,
+                shared_scripts_root=shared_scripts_local,
+                tag="local",
+            )
+            _print_result(result)
+            _log(verbose, "Local run completed")
+            return 0
+        except Exception as exc:
+            message = str(exc)
+            if "No module named 'torch'" in message:
+                print(
+                    "Local run failed because PyTorch is not installed in this environment. "
+                    "Install dependencies locally or use Modal cloud mode (without --local).",
+                    file=sys.stderr,
+                )
+                print(f"Details: {exc}", file=sys.stderr)
+                return 4
+            if "CUDA not available" in message:
+                print(
+                    "Local run failed because CUDA is unavailable on this machine. "
+                    "Use Modal cloud mode (without --local) or run on a CUDA-capable host.",
+                    file=sys.stderr,
+                )
+                print(f"Details: {exc}", file=sys.stderr)
+                return 3
+            raise
 
     try:
         import modal
@@ -433,7 +494,6 @@ def main() -> int:
 
     image = image.add_local_dir(test_dir, "/root/test")
     _log(verbose, f"Synced local test dir -> /root/test")
-    shared_scripts_local = os.path.join(REPO_ROOT, "scripts")
     if os.path.isdir(shared_scripts_local):
         image = image.add_local_dir(shared_scripts_local, "/root/project/scripts")
         _log(verbose, "Synced shared scripts dir -> /root/project/scripts")
