@@ -39,7 +39,11 @@
 - Git commit message 采用：`[TYPE] <简要描述>`
 - `TYPE` 建议使用：`FEAT`、`FIX`、`CHORE`、`REFACTOR`、`DOCS`、`TEST`
 - 示例：`[CHORE] Sync update notes`
-- 每次提交之前，把当天的update中的.md修改记录整理精简更刻度
+- 每次提交前必须先整理当天 `update/YYYY-MM-DD.md`，未整理不得提交。
+- 整理标准（精简 + 颗粒度）：
+  - 仅保留本次提交相关改动，删除重复和过程性描述。
+  - 每条记录必须写清：改了什么（文件/功能）、为什么改、结果（是否验证通过）。
+  - 优先使用短句条目，避免大段叙述。
 
 ## Modal 参考
 - 开发相关的 Modal App 时需要参考官方文档：
