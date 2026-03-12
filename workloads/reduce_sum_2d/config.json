@@ -1,0 +1,9 @@
+{
+  "mode": "all",
+  "variants": [],
+  "rows": 4096,
+  "cols": 4096,
+  "block_size": 256,
+  "warmup": 10,
+  "iters": 50
+}
