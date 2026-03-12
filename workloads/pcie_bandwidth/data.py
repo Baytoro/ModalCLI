@@ -11,14 +11,14 @@ def data(ctx: Dict[str, Any]) -> Dict[str, Any]:
     cfg = test_cfg.get("pcie_bandwidth", test_cfg) if isinstance(test_cfg, dict) else {}
 
     bytes_mb = int(cfg.get("bytes_mb", 256))
-    kernel_iters = int(cfg.get("kernel_iters", 20))
+    transfer_iters = int(cfg.get("transfer_iters", cfg.get("kernel_iters", 20)))
     warmup = int(cfg.get("warmup", 5))
     iters = int(cfg.get("iters", 20))
 
     if bytes_mb <= 0:
         raise ValueError("bytes_mb must be positive")
-    if kernel_iters <= 0:
-        raise ValueError("kernel_iters must be positive")
+    if transfer_iters <= 0:
+        raise ValueError("transfer_iters must be positive")
 
     nbytes = bytes_mb * 1024 * 1024
     n = nbytes // 4
@@ -31,10 +31,12 @@ def data(ctx: Dict[str, Any]) -> Dict[str, Any]:
     device_buf.uniform_(-1.0, 1.0)
 
     return {
-        "inputs": [host_buf, device_buf, kernel_iters, nbytes],
+        "inputs": [host_buf, device_buf, transfer_iters, nbytes],
         "bytes_mb": bytes_mb,
         "nbytes": nbytes,
-        "kernel_iters": kernel_iters,
+        "transfer_iters": transfer_iters,
+        # Keep legacy field for backward-compatible message/workflow parsing.
+        "kernel_iters": transfer_iters,
         "warmup": warmup,
         "iters": iters,
         "dtype": "float32",

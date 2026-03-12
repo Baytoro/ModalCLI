@@ -2,7 +2,7 @@
   "mode": "benchmark",
   "variants": [],
   "n": 67108864,
-  "kernel_iters": 20,
+  "copy_iters": 20,
   "warmup": 5,
   "iters": 20
 }

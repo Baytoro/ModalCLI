@@ -6,13 +6,13 @@
 torch::Tensor pcie_bandwidth_cuda(
     torch::Tensor host_buf,
     torch::Tensor device_buf,
-    int64_t kernel_iters,
+    int64_t transfer_iters,
     int64_t nbytes) {
   auto stream = at::cuda::getDefaultCUDAStream();
   const auto* src = host_buf.data_ptr<float>();
   auto* dst = device_buf.data_ptr<float>();
 
-  for (int i = 0; i < static_cast<int>(kernel_iters); ++i) {
+  for (int i = 0; i < static_cast<int>(transfer_iters); ++i) {
     C10_CUDA_CHECK(cudaMemcpyAsync(
         dst,
         src,
