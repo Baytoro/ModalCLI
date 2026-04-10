@@ -329,18 +329,30 @@ def _print_result(result: Dict[str, Any]) -> None:
                 f"({_fmt_float(summary.get('best_custom_ms'), 6)} ms)"
             )
         print("--- Variants ---")
+        # Print header
+        header_parts = ["Variant".ljust(10)]
+        if show_accuracy:
+            header_parts.append("Accuracy".ljust(8))
+        if show_benchmark:
+            header_parts.append("Time (ms)".ljust(10))
+        if any(item.get("message") for item in variants):
+            header_parts.append("Message")
+        print("  ".join(header_parts))
+        print("-" * (len("  ".join(header_parts))))
+        
+        # Print each variant
         for item in variants:
             name = item.get("variant", "unknown")
-            parts = [f"{name:<12}"]
+            row_parts = [str(name).ljust(10)]
             if show_accuracy:
                 ok = str(bool(item.get("allclose")))
-                parts.append(f"allclose={ok:<5}")
+                row_parts.append(("PASS" if ok == "True" else "FAIL").ljust(8))
             if show_benchmark:
                 custom_ms = _fmt_float(item.get("custom_ms"), 6)
-                parts.append(f"{custom_ms} ms")
+                row_parts.append(f"{custom_ms}".rjust(10))
             if item.get("message"):
-                parts.append(_format_variant_message(item.get("message")))
-            print(" ".join(parts))
+                row_parts.append(_format_variant_message(item.get("message")))
+            print("  ".join(row_parts))
         if isinstance(data, dict) and data:
             print("--- Settings ---")
             for key, value in data.items():
