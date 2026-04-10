@@ -335,8 +335,9 @@ def _print_result(result: Dict[str, Any]) -> None:
             header_parts.append("Accuracy".ljust(8))
         if show_benchmark:
             header_parts.append("Time (ms)".ljust(10))
-        if any(item.get("message") for item in variants):
-            header_parts.append("Message")
+        # Always show bandwidth column when we have data (which contains n)
+        if isinstance(data, dict) and data.get("n"):
+            header_parts.append("Bandwidth")
         print("  ".join(header_parts))
         print("-" * (len("  ".join(header_parts))))
         
@@ -350,8 +351,24 @@ def _print_result(result: Dict[str, Any]) -> None:
             if show_benchmark:
                 custom_ms = _fmt_float(item.get("custom_ms"), 6)
                 row_parts.append(f"{custom_ms}".rjust(10))
-            if item.get("message"):
-                row_parts.append(_format_variant_message(item.get("message")))
+            # Always show bandwidth when we have data and timing info
+            if isinstance(data, dict) and data.get("n") and item.get("custom_ms") is not None:
+                # Calculate memory bandwidth
+                n = data.get("n", 0)
+                custom_ms_val = item.get("custom_ms")
+                if n > 0 and custom_ms_val and custom_ms_val > 0:
+                    # Vector addition: 2 reads + 1 write = 3 arrays accessed
+                    bytes_per_element = 4  # float32
+                    total_bytes = 3 * n * bytes_per_element  # 2 reads + 1 write
+                    total_gb = total_bytes / (1024**3)
+                    time_s = custom_ms_val / 1000.0
+                    if time_s > 0:
+                        bandwidth_gb_s = total_gb / time_s
+                        row_parts.append(f"{bandwidth_gb_s:.2f} GB/s".ljust(12))
+                    else:
+                        row_parts.append("N/A".ljust(12))
+                else:
+                    row_parts.append("N/A".ljust(12))
             print("  ".join(row_parts))
         if isinstance(data, dict) and data:
             print("--- Settings ---")
