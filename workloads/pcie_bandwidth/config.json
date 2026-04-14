@@ -1,8 +1,0 @@
-{
-  "mode": "benchmark",
-  "variants": [],
-  "bytes_mb": 256,
-  "transfer_iters": 20,
-  "warmup": 5,
-  "iters": 20
-}

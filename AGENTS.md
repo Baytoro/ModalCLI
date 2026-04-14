@@ -9,6 +9,7 @@
   - `data.py`（提供 `data(ctx)`）
   - `ref.py`（提供 `run(ctx, data)`，`mode=accuracy/all` 时需要）
   - 可选 `message.py`（提供 `variant_message(ctx, variant, settings)`，用于每个 variant 的额外输出）
+  - `notes.md`（问题定义、优化日志、实验记录）
   - 自动推导命名的 CUDA 源码文件：
     - `<workload>.cpp`
     - `<workload>_*.cu`（同一 workload 可有多个变体，全部会被测试）
