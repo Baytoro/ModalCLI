@@ -40,7 +40,7 @@
 - Git commit message 采用：`[TYPE] <简要描述>`
 - `TYPE` 建议使用：`FEAT`、`FIX`、`CHORE`、`REFACTOR`、`DOCS`、`TEST`
 - 示例：`[CHORE] Sync update notes`
-- 每次提交前必须先整理当天 `update/YYYY-MM-DD.md`，未整理不得提交。
+- **每次提交前必须先整理当天 `update/YYYY-MM-DD.md`，未整理不得提交**。
 - 整理标准（精简 + 颗粒度）：
   - 仅保留本次提交相关改动，删除重复和过程性描述。
   - 每条记录必须写清：改了什么（文件/功能）、为什么改、结果（是否验证通过）。
