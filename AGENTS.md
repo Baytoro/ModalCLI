@@ -49,6 +49,7 @@
   - 使用超链接格式：`[workload_name](link)`
   - 没有链接时留空：`[workload_name]()`
 - **每次提交前必须先征得用户同意，不得擅自提交**。
+- **每次提交前必须运行 `clang-format` 格式化所有 C++/CUDA 代码**。
 
 ## Modal 参考
 - 开发相关的 Modal App 时需要参考官方文档：
