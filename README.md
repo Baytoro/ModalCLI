@@ -85,10 +85,10 @@ ModalCLI/
 
 | 名称 | 说明 |
 |------|------|
-| `vector_add` | 向量加法 (base, float4 变体) |
-| `reduce_sum` | 1D 归约求和 (base, cub 变体) |
-| `reduce_sum_2d` | 2D 按行归约求和 (base, cub 变体) |
-| `mean_squared_err` | 均方误差计算 |
+| [vector_add]() | 向量加法 (base, float4 变体) |
+| [reduce_sum]() | 1D 归约求和 (base, cub 变体) |
+| [reduce_sum_2d]() | 2D 按行归约求和 (base, cub 变体) |
+| [mean_squared_err](https://leetgpu.com/challenges/mean-squared-error) | 均方误差计算 |
 
 ## 提交规范
 
