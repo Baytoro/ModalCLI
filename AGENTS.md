@@ -48,6 +48,7 @@
 - 新增 workload 时，必须同步更新 `README.md` 的「当前 workload」表格：
   - 使用超链接格式：`[workload_name](link)`
   - 没有链接时留空：`[workload_name]()`
+- **每次提交前必须先征得用户同意，不得擅自提交**。
 
 ## Modal 参考
 - 开发相关的 Modal App 时需要参考官方文档：
