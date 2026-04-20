@@ -1,0 +1,7 @@
+{
+    "mode": "all",
+    "variants": [],
+    "n": 8388608,
+    "warmup": 10,
+    "iters": 50
+}
