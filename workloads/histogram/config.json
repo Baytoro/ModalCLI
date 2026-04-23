@@ -1,0 +1,8 @@
+{
+    "mode": "all",
+    "variants": [],
+    "n": 8388608,
+    "num_bins": 256,
+    "warmup": 10,
+    "iters": 50
+}
